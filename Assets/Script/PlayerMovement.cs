@@ -9,20 +9,16 @@ public class PlayerMovement : MonoBehaviour
     private Rigidbody2D rigidbody;
 
     public float moveSpeed = 8f;
-    //public float maxJumpHeight = 5f;
-    //public float maxJumpTime = 1f;
-    //public float jumpForce => (2f * maxJumpHeight) / (maxJumpTime / 2f);
-    //public float gravity => (-2f * maxJumpHeight) / Mathf.Pow((maxJumpTime / 2f), 2);
-
-    //public bool grounded { get; private set; }
-    //public bool jumping { get; private set; }
+   
 
     [SerializeField] private float jumpForce = 5f;
     private bool isGrounded = false;
     [SerializeField] private Transform groundCheck;
     [SerializeField] private LayerMask layerMask;
     [SerializeField] private float groundCheckLength = 1f;
+    private bool isFacingRight = true;
 
+    [SerializeField] CharacterAnimation characterAnimation;
     private float inputAxis;
     private Vector2 velocity;
 
@@ -37,37 +33,12 @@ public class PlayerMovement : MonoBehaviour
         HorizontalMovement();
         GroundCheck();
         PlayerJump();
-        //grounded = rigidbody.Raycast(Vector2.down);
-        //if (grounded)
-        //{
-        //    GroundedMovement();
-
-        //}
-        //ApplyGravity();
+       
 
 
     }
 
-    //private void GroundedMovement()
-    //{
-    //    velocity.y = Mathf.Max(velocity.y, 0);
-    //    jumping = velocity.y > 0f;
-    //    if (Input.GetButtonDown("Jump"))
-    //    {
-    //        Debug.Log("Jump");
-    //        velocity.y = jumpForce;
-    //        jumping = true;
-    //    }    
-    //}    
-
-    //private void ApplyGravity()
-    //{
-    //    bool falling = velocity.y < 0f || !Input.GetButton("Jump");
-    //    float multiplayer = falling ? 2f : 1f;
-
-    //    velocity.y += gravity * multiplayer * Time.deltaTime;
-    //    velocity.y = Mathf.Max(velocity.y, gravity / 2f);
-    //}    
+  
 
     private void GroundCheck()
     {
@@ -79,16 +50,41 @@ public class PlayerMovement : MonoBehaviour
         }
         else
             isGrounded = true;
+        characterAnimation.SetBool("isGrounded", groundCheck);
     }    
 
     private void PlayerJump()
     {
-        if(Input.GetKeyDown(KeyCode.Space))
+        if(Input.GetKeyDown(KeyCode.Space) && isGrounded)
         {
             velocity.y = jumpForce;
-            rigidbody.velocity = velocity;  
+            rigidbody.velocity = velocity;
+            characterAnimation.SetTrigger("jump");
         }
-    }    
+    }
+
+    private void FlipHander(Vector2 velocity)
+    {
+        Vector3 localScale = transform.localScale;
+        if (isFacingRight)
+        {
+            if (velocity.x < 0)
+            {
+                isFacingRight = false;
+                localScale.x = -1;
+            }
+
+        }
+        else
+        {
+            if (velocity.x > 0)
+            {
+                isFacingRight = true;
+                localScale.x = 1;
+            }
+        }
+        transform.localScale = localScale;
+    }
 
     private void HorizontalMovement()
     {
@@ -97,6 +93,9 @@ public class PlayerMovement : MonoBehaviour
         velocity.x = Mathf.MoveTowards(velocity.x, inputAxis * moveSpeed, moveSpeed * Time.deltaTime);
         velocity.y = rigidbody.velocity.y;
         rigidbody.velocity = velocity;
+
+        characterAnimation.SetFloat("velocity",Mathf.Abs(velocity.x));
+        FlipHander(velocity);
     }
 
     private void FixedUpdate()
@@ -117,7 +116,7 @@ public class PlayerMovement : MonoBehaviour
             }
         }
         if (velocity.x < 0)
-        {s
+        {
             if (pos.x <= leftEdge.x + 0.5f)
             {
                 velocity.x = 0;
